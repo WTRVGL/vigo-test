@@ -26,17 +26,6 @@ services:
     env_file:
       - ../../env/global.env
       - ../../env/leugens.env
-    environment:
-      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
-      ConnectionStrings__Default: ${DB_CONNECTION}
-      Jwt__Issuer: ${JWT__Issuer}
-      Jwt__Audience: ${JWT__Audience}
-      Jwt__Secret: ${JWT__Secret}
-      Cors__AllowedOrigins: ${Cors__AllowedOrigins}
-      Redis__Connection: ${Redis__Connection}
-      SEED_ON_STARTUP: ${SEED_ON_STARTUP}
-      MAINTENANCE_FLAG_FILE: ${MAINTENANCE_FLAG_FILE}
-      Discord__PublicBaseUrl: ${Discord__PublicBaseUrl}
     labels:
       - traefik.enable=true
       - traefik.http.routers.leugens-api.rule=Host(`${LEUGENS_API_HOST}`)
@@ -61,10 +50,6 @@ services:
     image: postgres:16-alpine
     env_file:
       - ../../env/leugens.env
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
