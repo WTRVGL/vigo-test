@@ -1,0 +1,9 @@
+# macOS/editor brol
+.DS_Store
+*.swp
+
+# Local age key
+age.txt
+
+# Traefik ACME state inside proxy (created on host)
+proxy/acme/

@@ -1,0 +1,22 @@
+services:
+  web:
+    image: grafana/grafana:latest
+    env_file:
+      - ../../env/global.env
+      - ../../env/grafana.env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`${GRAFANA_HOST}`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls.certresolver=le
+      - traefik.http.services.grafana.loadbalancer.server.port=${GRAFANA_INTERNAL_PORT}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+volumes:
+  grafana_data: {}
+networks:
+  default:
+    external: true
+    name: proxy_default
+

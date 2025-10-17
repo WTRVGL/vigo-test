@@ -1,0 +1,18 @@
+services:
+  web:
+    image: ghcr.io/yourorg/sampleapp:sha-REPLACE_ME
+    env_file:
+      - ../../env/global.env
+      - ../../env/sampleapp.env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.sampleapp.rule=Host(`${SAMPLEAPP_HOST}`)
+      - traefik.http.routers.sampleapp.entrypoints=websecure
+      - traefik.http.routers.sampleapp.tls.certresolver=le
+      - traefik.http.services.sampleapp.loadbalancer.server.port=${SAMPLEAPP_INTERNAL_PORT}
+    restart: unless-stopped
+networks:
+  default:
+    external: true
+    name: proxy_default
+

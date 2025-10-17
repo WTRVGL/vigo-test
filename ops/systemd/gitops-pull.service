@@ -1,0 +1,10 @@
+[Unit]
+Description=GitOps pull and apply
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/srv/vigo
+ExecStart=/bin/bash /srv/vigo/ops/deploy.sh

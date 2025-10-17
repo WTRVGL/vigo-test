@@ -1,0 +1,17 @@
+stages: [ build ]
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  SHA_TAG: sha-${CI_COMMIT_SHORT_SHA}
+  BRANCH_TAG: branch-${CI_COMMIT_REF_SLUG}
+
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - docker build -t $IMAGE_NAME:$SHA_TAG -t $IMAGE_NAME:$BRANCH_TAG .
+    - docker push $IMAGE_NAME:$SHA_TAG
+    - docker push $IMAGE_NAME:$BRANCH_TAG

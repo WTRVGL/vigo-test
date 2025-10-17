@@ -1,0 +1,11 @@
+[Unit]
+Description=Run GitOps pull every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+Unit=gitops-pull.service
+
+[Install]
+WantedBy=timers.target
+
