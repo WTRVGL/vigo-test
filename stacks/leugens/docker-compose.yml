@@ -6,37 +6,47 @@ services:
     env_file:
       - ../../env/global.env
       - ../../env/leugens.env
-    depends_on:
-      - api
     labels:
       - traefik.enable=true
       - traefik.http.routers.leugens.rule=Host(`${LEUGENS_WEB_HOST}`)
       - traefik.http.routers.leugens.entrypoints=websecure
       - traefik.http.routers.leugens.tls.certresolver=le
-      - traefik.http.routers.leugens.service=leugens
       - traefik.http.services.leugens.loadbalancer.server.port=80
     volumes:
       - flags:/mnt/flags
+    depends_on:
+      - api
     restart: unless-stopped
     networks:
-      - default
+      - proxy
+      - app
 
   api:
     image: ${LEUGENS_API_IMAGE}
     env_file:
       - ../../env/global.env
       - ../../env/leugens.env
-    depends_on:
-      - postgres
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      ConnectionStrings__Default: ${DB_CONNECTION}
+      Jwt__Issuer: ${JWT__Issuer}
+      Jwt__Audience: ${JWT__Audience}
+      Jwt__Secret: ${JWT__Secret}
+      Cors__AllowedOrigins: ${Cors__AllowedOrigins}
+      Redis__Connection: ${Redis__Connection}
+      SEED_ON_STARTUP: ${SEED_ON_STARTUP}
+      MAINTENANCE_FLAG_FILE: ${MAINTENANCE_FLAG_FILE}
+      Discord__PublicBaseUrl: ${Discord__PublicBaseUrl}
     labels:
       - traefik.enable=true
       - traefik.http.routers.leugens-api.rule=Host(`${LEUGENS_API_HOST}`)
       - traefik.http.routers.leugens-api.entrypoints=websecure
       - traefik.http.routers.leugens-api.tls.certresolver=le
-      - traefik.http.routers.leugens-api.service=leugens-api
       - traefik.http.services.leugens-api.loadbalancer.server.port=8080
     volumes:
       - flags:/mnt/flags
+    depends_on:
+      - postgres
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
       interval: 15s
@@ -44,13 +54,17 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - default
-      - internal
+      - proxy
+      - app
 
   postgres:
     image: postgres:16-alpine
     env_file:
       - ../../env/leugens.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -60,13 +74,13 @@ services:
       retries: 5
     restart: unless-stopped
     networks:
-      - internal
+      - app
 
 networks:
-  default:
+  proxy:
     external: true
     name: proxy_default
-  internal:
+  app:
     driver: bridge
 
 volumes:
