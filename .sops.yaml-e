@@ -3,4 +3,4 @@
 ## - To allow multiple operators, list multiple keys: ["age1alice...", "age1bob..."]
 creation_rules:
   - path_regex: env/.*\.env$
-    age: ["age10lfkvc9580fz7dly4q5qzhq8gp799ellfwd6h05u39h30sq53dps9aj058"]
+    age: ["age1YOUR_PUBLIC_KEY_HERE"]
