@@ -19,6 +19,29 @@ if [[ "$LOCAL" != "$REMOTE" ]]; then
   git reset --hard "origin/$REMOTE_BRANCH"
 fi
 
+ensure_docker || { err "Docker not ready"; exit 1; }
+
+# Retire stacks that were removed from git before syncing new files
+if [[ -d "$RUNTIME_DIR/stacks" ]]; then
+  declare -A DESIRED_STACKS=()
+  if [[ -d "$REPO_DIR/stacks" ]]; then
+    while IFS= read -r -d '' d; do
+      DESIRED_STACKS[$(basename "$d")]=1
+    done < <(find "$REPO_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
+  fi
+  while IFS= read -r -d '' d; do
+    stack=$(basename "$d")
+    if [[ -z "${DESIRED_STACKS[$stack]:-}" ]]; then
+      msg "Retire stack: ${stack}"
+      compose_file="$RUNTIME_DIR/stacks/$stack/docker-compose.yml"
+      if [[ -f "$compose_file" ]]; then
+        docker compose -p "$stack" --project-directory "$RUNTIME_DIR" -f "$compose_file" down --remove-orphans || true
+      fi
+      rm -rf "$RUNTIME_DIR/stacks/$stack"
+    fi
+  done < <(find "$RUNTIME_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
+fi
+
 msg "Prepare runtime…"
 mkdir -p "$RUNTIME_DIR"
 overlay "$REPO_DIR" "$RUNTIME_DIR"
@@ -43,33 +66,10 @@ if command -v sops >/dev/null 2>&1; then
   fi
 fi
 
-ensure_docker || { err "Docker not ready"; exit 1; }
-
 # Optional: allow running without the proxy for quick tests
 DISABLE_PROXY=${DISABLE_PROXY:-}
 # Default to auto-freeing 80/443 to keep first-run zero-touch
 AUTO_FREE_PORTS=${AUTO_FREE_PORTS:-1}
-
-# Before syncing new stacks, retire any stacks removed from git
-if [[ -d "$RUNTIME_DIR/stacks" ]]; then
-  declare -A DESIRED_STACKS=()
-  if [[ -d "$REPO_DIR/stacks" ]]; then
-    while IFS= read -r -d '' d; do
-      DESIRED_STACKS[$(basename "$d")]=1
-    done < <(find "$REPO_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
-  fi
-  while IFS= read -r -d '' d; do
-    stack=$(basename "$d")
-    if [[ -z "${DESIRED_STACKS[$stack]:-}" ]]; then
-      msg "Retire stack: ${stack}"
-      compose_file="$RUNTIME_DIR/stacks/$stack/docker-compose.yml"
-      if [[ -f "$compose_file" ]]; then
-        docker compose -p "$stack" --project-directory "$RUNTIME_DIR" -f "$compose_file" down --remove-orphans || true
-      fi
-      rm -rf "$RUNTIME_DIR/stacks/$stack"
-    fi
-  done < <(find "$RUNTIME_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
-fi
 
 # If proxy is enabled, ensure ports 80/443 are free, or optionally free them
 if [[ -z "$DISABLE_PROXY" || "$DISABLE_PROXY" == "0" || "$DISABLE_PROXY" == "false" ]]; then
