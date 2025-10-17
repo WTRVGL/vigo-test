@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  web:
+    image: ${LEUGENS_WEB_IMAGE}
+    env_file:
+      - ../../env/global.env
+      - ../../env/leugens.env
+    depends_on:
+      - api
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.leugens.rule=Host(`${LEUGENS_WEB_HOST}`)
+      - traefik.http.routers.leugens.entrypoints=websecure
+      - traefik.http.routers.leugens.tls.certresolver=le
+      - traefik.http.routers.leugens.service=leugens
+      - traefik.http.services.leugens.loadbalancer.server.port=80
+    volumes:
+      - flags:/mnt/flags
+    restart: unless-stopped
+    networks:
+      - default
+
+  api:
+    image: ${LEUGENS_API_IMAGE}
+    env_file:
+      - ../../env/global.env
+      - ../../env/leugens.env
+    depends_on:
+      - postgres
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.leugens-api.rule=Host(`${LEUGENS_API_HOST}`)
+      - traefik.http.routers.leugens-api.entrypoints=websecure
+      - traefik.http.routers.leugens-api.tls.certresolver=le
+      - traefik.http.routers.leugens-api.service=leugens-api
+      - traefik.http.services.leugens-api.loadbalancer.server.port=8080
+    volumes:
+      - flags:/mnt/flags
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - default
+      - internal
+
+  postgres:
+    image: postgres:16-alpine
+    env_file:
+      - ../../env/leugens.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  default:
+    external: true
+    name: proxy_default
+  internal:
+    driver: bridge
+
+volumes:
+  flags:
+  pgdata:
