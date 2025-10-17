@@ -21,18 +21,22 @@ fi
 
 ensure_docker || { err "Docker not ready"; exit 1; }
 
-# Retire stacks that were removed from git before syncing new files
+# Determine desired stacks/projects from git
+declare -A DESIRED_STACKS=()
+if [[ -d "$REPO_DIR/stacks" ]]; then
+  while IFS= read -r -d '' d; do
+    DESIRED_STACKS[$(basename "$d")]=1
+  done < <(find "$REPO_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
+fi
+# Always keep proxy compose project
+DESIRED_STACKS[proxy]=1
+
+# Retire stack directories removed from git before syncing new files
 if [[ -d "$RUNTIME_DIR/stacks" ]]; then
-  declare -A DESIRED_STACKS=()
-  if [[ -d "$REPO_DIR/stacks" ]]; then
-    while IFS= read -r -d '' d; do
-      DESIRED_STACKS[$(basename "$d")]=1
-    done < <(find "$REPO_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
-  fi
   while IFS= read -r -d '' d; do
     stack=$(basename "$d")
     if [[ -z "${DESIRED_STACKS[$stack]:-}" ]]; then
-      msg "Retire stack: ${stack}"
+      msg "Retire stack dir: ${stack}"
       compose_file="$RUNTIME_DIR/stacks/$stack/docker-compose.yml"
       if [[ -f "$compose_file" ]]; then
         docker compose -p "$stack" --project-directory "$RUNTIME_DIR" -f "$compose_file" down --remove-orphans || true
@@ -41,6 +45,26 @@ if [[ -d "$RUNTIME_DIR/stacks" ]]; then
     fi
   done < <(find "$RUNTIME_DIR/stacks" -maxdepth 1 -mindepth 1 -type d -print0)
 fi
+
+# Retire any running compose projects no longer declared
+declare -A RUNNING_PROJECTS=()
+while IFS= read -r project; do
+  [[ -z "$project" ]] && continue
+  RUNNING_PROJECTS[$project]=1
+done < <(docker ps --format '{{.Label "com.docker.compose.project"}}' --filter label=com.docker.compose.project)
+
+for project in "${!RUNNING_PROJECTS[@]}"; do
+  [[ -n "${DESIRED_STACKS[$project]:-}" ]] && continue
+  msg "Retire stack containers: ${project}"
+  ids=$(docker ps -aq --filter "label=com.docker.compose.project=$project")
+  if [[ -n "$ids" ]]; then
+    docker rm -f $ids >/dev/null 2>&1 || true
+  fi
+  nets=$(docker network ls -q --filter "label=com.docker.compose.project=$project")
+  if [[ -n "$nets" ]]; then
+    docker network rm $nets >/dev/null 2>&1 || true
+  fi
+done
 
 msg "Prepare runtime…"
 mkdir -p "$RUNTIME_DIR"
