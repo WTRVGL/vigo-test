@@ -2,6 +2,60 @@
 
 VIGO is a ready‑to‑use template for running apps on one or more VPS hosts using Docker Compose, Traefik (automatic TLS via Let’s Encrypt), and a pull‑based GitOps loop. Secrets are committed encrypted with SOPS (age), and a systemd timer reconciles hosts every minute.
 
+## Deployment Overview (fill for your VPS)
+
+Keep a quick, human‑readable summary of what this repository currently deploys. Avoid secrets; this is operational state you’re OK to share with your team.
+
+- Hostname: vigo-test
+- Public IPv4: 172.235.173.202  |  Public IPv6: fe80::2000:5eff:fe28:165f
+- Proxy: Traefik v3.1 on network `proxy_default` (ACME resolver `le`)
+- ACME email: set in `env/global.env` (`TRAEFIK_ACME_EMAIL`, encrypted)
+ - Domains: 
+   - `exolan.be` (apex A/AAAA) and `www.exolan.be` (CNAME → apex)
+   - `leugens.be` (apex A/AAAA) and `www.leugens.be` (CNAME → apex)
+ - See Active Stacks below for per‑app routes and images
+- Last converge: <timestamp or note from gitops logs>
+
+Update tips (run on VPS):
+
+```bash
+# Basic host info
+hostname -f || hostname
+curl -4s https://ifconfig.co || curl -4s https://api.ipify.org
+curl -6s https://ifconfig.co || true
+
+# Traefik + stacks status
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
+docker logs --since=1h traefik | tail -n 100
+
+# ACME status (look for successful cert issuance)
+docker logs traefik 2>&1 | rg -i "acme|certificate|lego" | tail -n 50
+```
+
+DNS checklist:
+
+- `A` record for apex → your VPS IPv4; add `AAAA` only if IPv6 80/443 are reachable.
+- `CNAME` for `www` → apex (preferred) or duplicate `A/AAAA` to the same IPs.
+- If using a CDN/proxy, disable proxying until certificates are issued (or use DNS‑01).
+
+## Active Stacks
+
+- exolan
+  - Domains: `exolan.be` (primary), `www.exolan.be` (redirects to apex)
+  - Image: `ghcr.io/wtrvgl/exolan/web:v0.1.1`
+  - Service/port: `web` → 80 (via Traefik)
+  - Networks: `proxy_default`
+
+- leugens
+  - Domains:
+    - Web: `${LEUGENS_WEB_HOST}` (set in `env/leugens.env`, encrypted)
+    - WWW: `www.leugens.be` (redirects to apex)
+    - API: `${LEUGENS_API_HOST}` and also `Host(${LEUGENS_WEB_HOST}) && PathPrefix(/api)`
+  - Images: `${LEUGENS_WEB_IMAGE}`, `${LEUGENS_API_IMAGE}`, `postgres:16-alpine`
+  - Services/ports: `web` → 80, `api` → 8080, `postgres` → 5432 (internal)
+  - Networks: `proxy_default` (edge), `app` (private)
+  - Volumes: `flags`, `pgdata` (name `${LEUGENS_PGDATA_VOLUME:-leugens_pgdata}`)
+
 ## Quick Start
 - Prefer the single‑page, copy/paste guide: [Zero to Live](docs/00-zero-to-live.md)
 - Summary:
