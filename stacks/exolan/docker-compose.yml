@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  web:
+    image: ghcr.io/wtrvgl/exolan/web:0.1.1
+    container_name: exolan-web
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy_default
+      - traefik.http.routers.exolan.rule=Host(`exolan.be`)
+      - traefik.http.routers.exolan.entrypoints=websecure
+      - traefik.http.routers.exolan.tls.certresolver=le
+      - traefik.http.services.exolan.loadbalancer.server.port=80
+      # Handle www on TLS and redirect to apex
+      - traefik.http.routers.exolan-www.rule=Host(`www.exolan.be`)
+      - traefik.http.routers.exolan-www.entrypoints=websecure
+      - traefik.http.routers.exolan-www.tls.certresolver=le
+      - traefik.http.middlewares.exolan-www-redirect.redirectregex.regex=^https?://www\.exolan\.be/(.*)
+      - traefik.http.middlewares.exolan-www-redirect.redirectregex.replacement=https://exolan.be/$1
+      - traefik.http.middlewares.exolan-www-redirect.redirectregex.permanent=true
+      - traefik.http.routers.exolan-www.middlewares=exolan-www-redirect
+      # Optional: HTTP->HTTPS redirect if not globally handled by Traefik
+      - traefik.http.middlewares.exolan-https-redirect.redirectscheme.scheme=https
+      - traefik.http.routers.exolan-http.rule=Host(`exolan.be`)
+      - traefik.http.routers.exolan-http.entrypoints=web
+      - traefik.http.routers.exolan-http.middlewares=exolan-https-redirect
+      - traefik.http.routers.exolan-www-http.rule=Host(`www.exolan.be`)
+      - traefik.http.routers.exolan-www-http.entrypoints=web
+      - traefik.http.routers.exolan-www-http.middlewares=exolan-https-redirect
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
+    name: proxy_default
