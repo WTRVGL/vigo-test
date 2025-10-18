@@ -1,6 +1,6 @@
 services:
   web:
-    image: ghcr.io/wtrvgl/exolan/web:latest
+    image: ghcr.io/wtrvgl/exolan/web:v0.1.3
     container_name: exolan-web
     restart: unless-stopped
     labels:
