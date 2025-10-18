@@ -8,6 +8,7 @@ services:
       - ../../env/leugens.env
     labels:
       - traefik.enable=true
+      - traefik.docker.network=proxy_default
       - traefik.http.routers.leugens.rule=Host(`${LEUGENS_WEB_HOST}`)
       - traefik.http.routers.leugens.entrypoints=websecure
       - traefik.http.routers.leugens.tls.certresolver=le
@@ -28,6 +29,7 @@ services:
       - ../../env/leugens.env
     labels:
       - traefik.enable=true
+      - traefik.docker.network=proxy_default
       - traefik.http.routers.leugens-api.rule=Host(`${LEUGENS_API_HOST}`)
       - traefik.http.routers.leugens-api.entrypoints=websecure
       - traefik.http.routers.leugens-api.tls.certresolver=le
@@ -37,6 +39,8 @@ services:
       - traefik.http.routers.leugens-api-path.rule=Host(`${LEUGENS_WEB_HOST}`) && PathPrefix(`/api`)
       - traefik.http.routers.leugens-api-path.entrypoints=websecure
       - traefik.http.routers.leugens-api-path.tls=true
+      - traefik.http.routers.leugens-api-path.tls.certresolver=le
+      - traefik.http.routers.leugens-api-path.priority=100
       - traefik.http.routers.leugens-api-path.service=leugens-api
       - traefik.http.services.leugens-api.loadbalancer.server.port=8080
     volumes:

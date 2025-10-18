@@ -6,6 +6,9 @@ services:
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      # Redirect all HTTP (web) to HTTPS (websecure)
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
       - --certificatesresolvers.le.acme.tlschallenge=true
       - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL:?set in env/global.env}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
