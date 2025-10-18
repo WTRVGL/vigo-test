@@ -82,3 +82,5 @@ networks:
 volumes:
   flags:
   pgdata:
+    external: true
+    name: ${LEUGENS_PGDATA_VOLUME:-leugens_pgdata}
