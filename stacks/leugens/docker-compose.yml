@@ -31,6 +31,13 @@ services:
       - traefik.http.routers.leugens-api.rule=Host(`${LEUGENS_API_HOST}`)
       - traefik.http.routers.leugens-api.entrypoints=websecure
       - traefik.http.routers.leugens-api.tls.certresolver=le
+      # Also serve the API under the web host on path /api to support
+      # frontends that call relative URLs (e.g., fetch('/api/...')).
+      # This avoids serving the SPA index.html for /api/* on the web container.
+      - traefik.http.routers.leugens-api-path.rule=Host(`${LEUGENS_WEB_HOST}`) && PathPrefix(`/api`)
+      - traefik.http.routers.leugens-api-path.entrypoints=websecure
+      - traefik.http.routers.leugens-api-path.tls=true
+      - traefik.http.routers.leugens-api-path.service=leugens-api
       - traefik.http.services.leugens-api.loadbalancer.server.port=8080
     volumes:
       - flags:/mnt/flags
