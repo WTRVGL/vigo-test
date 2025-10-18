@@ -44,7 +44,6 @@ services:
       # This avoids serving the SPA index.html for /api/* on the web container.
       - traefik.http.routers.leugens-api-path.rule=Host(`${LEUGENS_WEB_HOST}`) && PathPrefix(`/api`)
       - traefik.http.routers.leugens-api-path.entrypoints=websecure
-      - traefik.http.routers.leugens-api-path.tls=true
       - traefik.http.routers.leugens-api-path.tls.certresolver=le
       - traefik.http.routers.leugens-api-path.priority=100
       - traefik.http.routers.leugens-api-path.service=leugens-api

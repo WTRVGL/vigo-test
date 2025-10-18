@@ -10,7 +10,8 @@ services:
       # Redirect all HTTP (web) to HTTPS (websecure)
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL:?set in env/global.env}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
     ports:
@@ -18,7 +19,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./acme/acme.json:/letsencrypt/acme.json
+      - /srv/runtime/proxy/acme/acme.json:/letsencrypt/acme.json
     restart: unless-stopped
 networks:
   default:

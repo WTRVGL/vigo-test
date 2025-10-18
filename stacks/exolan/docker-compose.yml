@@ -18,14 +18,6 @@ services:
       - traefik.http.middlewares.exolan-www-redirect.redirectregex.replacement=https://exolan.be/$1
       - traefik.http.middlewares.exolan-www-redirect.redirectregex.permanent=true
       - traefik.http.routers.exolan-www.middlewares=exolan-www-redirect
-      # Optional: HTTP->HTTPS redirect if not globally handled by Traefik
-      - traefik.http.middlewares.exolan-https-redirect.redirectscheme.scheme=https
-      - traefik.http.routers.exolan-http.rule=Host(`exolan.be`)
-      - traefik.http.routers.exolan-http.entrypoints=web
-      - traefik.http.routers.exolan-http.middlewares=exolan-https-redirect
-      - traefik.http.routers.exolan-www-http.rule=Host(`www.exolan.be`)
-      - traefik.http.routers.exolan-www-http.entrypoints=web
-      - traefik.http.routers.exolan-www-http.middlewares=exolan-https-redirect
     networks:
       - proxy
 
