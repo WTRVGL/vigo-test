@@ -1,17 +1,13 @@
 services:
   traefik:
     image: traefik:v3.1
-    container_name: traefik
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      # Redirect all HTTP (web) to HTTPS (websecure)
-      - --entrypoints.web.http.redirections.entrypoint.to=websecure
-      - --entrypoints.web.http.redirections.entrypoint.scheme=https
-      - --certificatesresolvers.le.acme.httpchallenge=true
-      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      
+      - --certificatesresolvers.le.acme.tlschallenge=true
       - --certificatesresolvers.le.acme.email=${TRAEFIK_ACME_EMAIL:?set in env/global.env}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
     ports:
@@ -19,7 +15,7 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /srv/runtime/proxy/acme/acme.json:/letsencrypt/acme.json
+      - ./acme/acme.json:/letsencrypt/acme.json
     restart: unless-stopped
 networks:
   default:
